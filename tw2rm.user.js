@@ -2,8 +2,9 @@
 // @name        tw2rm
 // @namespace   fxtm
 // @description TeamWox to Redmine
-// @version     1
+// @version     2
 // @grant       GM_openInTab
+// @grant       unsafeWindow
 // @match https://tw.fxtm.com/tasks/view/*
 // @match https://tw.fxtm.com/servicedesk/view/*
 // @require     https://code.jquery.com/jquery-2.1.4.min.js
@@ -23,10 +24,27 @@ if (!String.prototype.format) {
   };
 }
 
+function intercept()
+{
+    var w = unsafeWindow.top;
+
+    var original = w.Controls.ContentViewExt.prototype.SetData;
+    w.Controls.ContentViewExt.prototype.SetData = 123;
+
+    console.log('1', w.Controls.ContentViewExt.prototype.SetData, w.Controls.ContentViewExt.SetData);
+/*
+    function(){
+        console.log('Before original', arguments);
+        original.apply(this, arguments);
+        console.log('After original');
+    }*/
+}
+
+
 function addRedmineLink(){
     var tableRow = $('<td><a class="commands-panel-link with-image" style="background-image: url(\'https://redmine.fxtm/favicon.ico\');" href="javascript:void(0)" title="To redmine">To redmine</a></td>');
     var container = $('.head .commands table tr');
-    console.log(container, tableRow);
+    // console.log(container, tableRow);
     container.prepend(tableRow);
     return tableRow.find('a');
 }
@@ -82,7 +100,7 @@ function htmlToTextile(html){
         html = html.replace(/<img.*?src="([^"]+)".*?>/g, " !{max-width: 100%}{0}$1! ".format(getTwHost()));
         html = html.replace(/<.*?>/g, "");
 
-        console.log('html', html);
+        // console.log('html', html);
 
         return html;
 
@@ -96,14 +114,14 @@ function htmlToTextile(html){
     return ":(";
 }
 
-setTimeout(function(){
-    var btn = addRedmineLink();
+var redminizedLink = null;
 
-    btn.on('click', function(){
+function redminize() {
+    redminizedLink = addRedmineLink();
+
+    redminizedLink.on('click', function(){
         var tw = getTwPostData(),
             rm = new RedmineLink('https://redmine.fxtm', 'web-development-department');
-
-        console.log('tw', tw, 'rm', rm);
 
         rm.setFields({
             subject: tw.title,
@@ -113,9 +131,18 @@ setTimeout(function(){
         // https://redmine.fxtm/projects/unixdp/issues/new?issue[subject]=Query&issue[assigned_to_id]=6&issue[tracker_id]=7&issue[description]=%3Cpre%3E%0D%0A%0D%0A%0D%0A%3C/pre%3E
         var linkText = rm.render();
 
-        console.log(linkText);
+        // console.log(linkText);
         GM_openInTab(linkText, false);
     });
+
+    $('div.page_numerator a').on('click', function(){
+        // console.log('a!');
+        setTimeout(redminize, 1000);
+    });
+}
+
+setTimeout(function(){
+    redminize();
 }, 1000);
 
-console.log('tw2rm: ', window, $('body'));
+console.log('tw2rm');
