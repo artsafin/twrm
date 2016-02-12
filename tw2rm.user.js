@@ -211,7 +211,7 @@ function openRedmineWithParams(tw, overrideParams) {
     var twLink = tw.sel.href ? "TW post @{0}@: {1}".format(tw.sel.linkName, tw.sel.href) : "TW: {0}".format(tw.self_link);
 
     rm.setFields($.extend({
-        "issue[subject]": tw.title,
+        "issue[subject]": tw.sel.linkName ? (tw.title + " / post " + tw.sel.linkName) : tw.title,
         "issue[tracker_id]": 4, // Task
         "issue[description]": twLink + "\n\n" + description,
         "issue[custom_field_values]": {
